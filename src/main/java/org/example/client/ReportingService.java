@@ -7,4 +7,8 @@ public class ReportingService {
         this.notificationService = notificationService;
     }
 
+    public void sendNotification() {
+        notificationService.doSomething();
+    }
+
 }

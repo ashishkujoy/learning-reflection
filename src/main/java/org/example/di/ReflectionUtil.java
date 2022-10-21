@@ -10,26 +10,6 @@ import org.example.annotations.PostContruct;
 
 public class ReflectionUtil {
 
-    public static Optional<Constructor<?>> getZeroArgsConstructor(Class<?> clazz) {
-        Constructor<?>[] constructors = clazz.getConstructors();
-        for(Constructor<?> constructor: constructors) {
-            if(constructor.getParameterCount() == 0) {
-                return Optional.of(constructor);
-            }
-        }
-        return Optional.empty();
-    }
-
-    public static Optional<Constructor<?>> getNonZeroArgsConstructor(Class<?> clazz) {
-        Constructor<?>[] constructors = clazz.getConstructors();
-        
-        if(constructors.length == 0) {
-            return Optional.empty();
-        } else {
-            return Optional.of(constructors[0]);
-        }
-    }
-
     @SuppressWarnings("unchecked")
     public static <T> Optional<T> constructNewInstance(Class<T> clazz) {
         Constructor<?>[] constructors = clazz.getConstructors();
