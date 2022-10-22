@@ -3,76 +3,65 @@ package org.example.di;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Optional;
-
-import org.example.annotations.Autowired;
-import org.example.annotations.PostContruct;
 
 public class ReflectionUtil {
+    private final BeanReadCache beanCache;
+
+    public ReflectionUtil(BeanReadCache beanCache) {
+        this.beanCache = beanCache;
+    }
 
     @SuppressWarnings("unchecked")
-    public static <T> Optional<T> constructNewInstance(Class<T> clazz) {
-        Constructor<?>[] constructors = clazz.getConstructors();
-        if(constructors.length == 1) {
-            return constructInstanceOf((Constructor<T>) constructors[0]);
-        } else {
-            ArrayList<Constructor<?>> construtorWithAutowired = new ArrayList<>();
-            for(Constructor<?> constructor: constructors) {
-                if(constructor.getAnnotation(Autowired.class) != null) {
-                    construtorWithAutowired.add(constructor);
-                }
-            }
-            if(construtorWithAutowired.size() == 1) {
-                return constructInstanceOf((Constructor<T>) construtorWithAutowired.get(0));
-            }
-            if(construtorWithAutowired.size() == 0) {
-                throw new RuntimeException(String.format("No constructor for bean %s has been annotated with @Autowired annotation, mark one of the constructor as @Autowired", clazz.getName()));
-            }
-            if(construtorWithAutowired.size() > 1) {
-                throw new RuntimeException(String.format("%d constructor for bean %s has been annotated with @Autowired annotation, mark only one of the constructor as @Autowired", construtorWithAutowired.size() ,clazz.getName()));
-            }
-        }
-        return Optional.empty();    
-    }
-
-    private static <T> Optional<T> constructInstanceOf(Constructor<T> constructor) {
-        Class<?>[] parameterTypes = constructor.getParameterTypes();
-        Object[] constructorArgs = new Object[parameterTypes.length];
+    public <T> T createInstanceOf(Class<T> beanClass) {
+        Constructor<?> primaryConstructor = getConstructor(beanClass);
+        Class<?>[] constructorArgClasses = primaryConstructor.getParameterTypes();
+        ArrayList<Object> constructorParameters = new ArrayList<>(constructorArgClasses.length);
         
-        for(int i =0; i < parameterTypes.length; i++) {
-            Object arg = constructNewInstance(parameterTypes[i]).get();
-            constructorArgs[i] = arg;  
+        for(Class<?> argType : constructorArgClasses) {
+            constructorParameters.add(beanCache.getBean(argType).get());
         }
-
         try {
-            T newInstance = constructor.newInstance(constructorArgs);
-            runPostConstructMethod(newInstance);
-            return Optional.of(newInstance);
+            Object newInstance = primaryConstructor.newInstance(constructorParameters.toArray());
+            return (T) newInstance;
         } catch(Throwable t) {
-            return Optional.empty();
-        }
-    }
-
-    private static void runPostConstructMethod(Object newlyInstantiatedBean) {
-        Class<? extends Object> clazz = newlyInstantiatedBean.getClass();
-        Method[] declaredMethods = clazz.getDeclaredMethods();
-        for(Method method : declaredMethods) {
-            if(method.getAnnotation(PostContruct.class) != null) {
-                try {
-                    method.setAccessible(true);
-                    method.invoke(newlyInstantiatedBean);    
-                } catch(Throwable t) {
-                    throw new RuntimeException(
-                        String.format(
-                            "Failed to invoke post construct method on bean: %s, method: %s",
-                                    clazz.getName(),
-                                    method.getName()
-                            ),
-                        t    
-                    );
-                }
-            }
+            throw new RuntimeException(t);
         }
     }
     
+    private Constructor<?> getConstructor(Class<?> beanClass) {
+        Constructor<?>[] constructors = beanClass.getConstructors();
+        if(constructors.length == 1) {
+            return constructors[0];
+        } else {
+            ArrayList<Constructor<?>> constructorWithAutowiredAnnotation = new ArrayList<>();
+            for(Constructor<?> constructor: constructors) {
+                if(constructor.isAnnotationPresent(Autowired.class)) {
+                    constructorWithAutowiredAnnotation.add(constructor);
+                }
+            }
+            if(constructorWithAutowiredAnnotation.size() == 1) {
+                return constructorWithAutowiredAnnotation.get(0);
+            } else {
+                throw new RuntimeException(
+                    String.format("For bean %s: Required exactly one constructor to be annotated with @Autowired found %d",
+                     beanClass.getName(),
+                     constructorWithAutowiredAnnotation.size()
+                     )
+                );
+            }
+        }
+    }
+
+    public void invokePostConstruct(Object newInstance) {
+        Method[] declaredMethods = newInstance.getClass().getDeclaredMethods();
+        for(Method method: declaredMethods) {
+            if(method.isAnnotationPresent(PostConstruct.class)) {
+                try {
+                    method.invoke(newInstance);
+                } catch (Throwable e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+    }
 }
