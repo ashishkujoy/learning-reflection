@@ -9,14 +9,14 @@ import org.example.ticket.TicketBookingService;
 
 public class Main {
     public static void main(String[] args) {
-        ApplicationContext applicationContext = ApplicationContext.init();
-        Optional<NotificationService> notificationService = applicationContext.getBean(NotificationService.class);
-        Optional<PaymentSerivce> paymentService = applicationContext.getBean(PaymentSerivce.class);
+        ApplicationContext applicationContext = ApplicationContext.init(Main.class);
+        // Optional<NotificationService> notificationService = applicationContext.getBean(NotificationService.class);
+        // Optional<PaymentSerivce> paymentService = applicationContext.getBean(PaymentSerivce.class);
 
-        notificationService.get().sendBookingNotification();
-        paymentService.get().completePayment();
+        // notificationService.get().sendBookingNotification();
+        // paymentService.get().completePayment();
 
-        Optional<TicketBookingService> ticketBookingService = applicationContext.getBean(TicketBookingService.class);
-        ticketBookingService.get().bookTicket();
+        // Optional<TicketBookingService> ticketBookingService = applicationContext.getBean(TicketBookingService.class);
+        // ticketBookingService.get().bookTicket();
     }
 }
