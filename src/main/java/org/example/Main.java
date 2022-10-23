@@ -1,10 +1,8 @@
 package org.example;
 
-import java.util.Optional;
-
 import org.example.di.ApplicationContext;
 import org.example.ticket.NotificationService;
-import org.example.ticket.PaymentService;
+import org.example.ticket.PaymentServiceImpl;
 import org.example.ticket.TicketBookingService;
 
 public class Main {
@@ -13,7 +11,7 @@ public class Main {
 
 
         NotificationService notificationService = applicationContext.getBean(NotificationService.class);
-        PaymentService paymentService = applicationContext.getBean(PaymentService.class);
+        PaymentServiceImpl paymentService = applicationContext.getBean(PaymentServiceImpl.class);
 
         notificationService.sendBookingNotification();
         paymentService.completePayment();
