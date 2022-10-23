@@ -1,7 +1,6 @@
 package org.example.di;
 
 import java.util.HashMap;
-import java.util.Optional;
 
 public class ApplicationContext implements BeanReadCache {
     private static ApplicationContext applicationContext;
@@ -22,9 +21,9 @@ public class ApplicationContext implements BeanReadCache {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T> Optional<T> getBean(Class<T> beanClass) {
+    public <T> T getBean(Class<T> beanClass) {
         if(beanCache.containsKey(beanClass)) {
-            return Optional.of((T) beanCache.get(beanClass));
+            return (T) beanCache.get(beanClass);
         }
 
         try {
@@ -32,10 +31,9 @@ public class ApplicationContext implements BeanReadCache {
             this.reflectionUtil.invokePostConstruct(newInstance);
             beanCache.put(beanClass, newInstance);
 
-            return Optional.of(newInstance);
+            return newInstance;
         } catch (Throwable e) {
-            e.printStackTrace();
-            return Optional.empty();
+            throw new BeanCreationException(this.reflectionUtil.getName(beanClass),  e);
         }
     }
 

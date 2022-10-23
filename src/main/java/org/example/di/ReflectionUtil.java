@@ -18,7 +18,7 @@ public class ReflectionUtil {
         ArrayList<Object> constructorParameters = new ArrayList<>(constructorArgClasses.length);
         
         for(Class<?> argType : constructorArgClasses) {
-            constructorParameters.add(beanCache.getBean(argType).get());
+            constructorParameters.add(beanCache.getBean(argType));
         }
         try {
             Object newInstance = primaryConstructor.newInstance(constructorParameters.toArray());
@@ -63,5 +63,9 @@ public class ReflectionUtil {
                 }
             }
         }
+    }
+
+    public String getName(Class<?> beanClass) {
+        return beanClass.getName();
     }
 }
