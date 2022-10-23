@@ -1,11 +1,13 @@
 package org.example.di;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ReflectionUtil {
     private final BeanReadCache beanCache;
@@ -19,46 +21,45 @@ public class ReflectionUtil {
         Constructor<?> primaryConstructor = getConstructor(beanClass);
         Class<?>[] constructorArgClasses = primaryConstructor.getParameterTypes();
         ArrayList<Object> constructorParameters = new ArrayList<>(constructorArgClasses.length);
-        
-        for(Class<?> argType : constructorArgClasses) {
+
+        for (Class<?> argType : constructorArgClasses) {
             constructorParameters.add(beanCache.getBean(argType).get());
         }
         try {
             Object newInstance = primaryConstructor.newInstance(constructorParameters.toArray());
             return (T) newInstance;
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             throw new RuntimeException(t);
         }
     }
-    
+
     private Constructor<?> getConstructor(Class<?> beanClass) {
         Constructor<?>[] constructors = beanClass.getConstructors();
-        if(constructors.length == 1) {
+        if (constructors.length == 1) {
             return constructors[0];
         } else {
             ArrayList<Constructor<?>> constructorWithAutowiredAnnotation = new ArrayList<>();
-            for(Constructor<?> constructor: constructors) {
-                if(constructor.isAnnotationPresent(Autowired.class)) {
+            for (Constructor<?> constructor : constructors) {
+                if (constructor.isAnnotationPresent(Autowired.class)) {
                     constructorWithAutowiredAnnotation.add(constructor);
                 }
             }
-            if(constructorWithAutowiredAnnotation.size() == 1) {
+            if (constructorWithAutowiredAnnotation.size() == 1) {
                 return constructorWithAutowiredAnnotation.get(0);
             } else {
                 throw new RuntimeException(
-                    String.format("For bean %s: Required exactly one constructor to be annotated with @Autowired found %d",
-                     beanClass.getName(),
-                     constructorWithAutowiredAnnotation.size()
-                     )
-                );
+                        String.format(
+                                "For bean %s: Required exactly one constructor to be annotated with @Autowired found %d",
+                                beanClass.getName(),
+                                constructorWithAutowiredAnnotation.size()));
             }
         }
     }
 
     public void invokePostConstruct(Object newInstance) {
         Method[] declaredMethods = newInstance.getClass().getDeclaredMethods();
-        for(Method method: declaredMethods) {
-            if(method.isAnnotationPresent(PostConstruct.class)) {
+        for (Method method : declaredMethods) {
+            if (method.isAnnotationPresent(PostConstruct.class)) {
                 try {
                     method.invoke(newInstance);
                 } catch (Throwable e) {
@@ -68,7 +69,7 @@ public class ReflectionUtil {
         }
     }
 
-    public boolean isInterfaceOrAbstractClass(Class<?> beanClass) {        
+    public boolean isInterfaceOrAbstractClass(Class<?> beanClass) {
         return beanClass.isInterface() || Modifier.isAbstract(beanClass.getModifiers());
     }
 
@@ -79,8 +80,23 @@ public class ReflectionUtil {
                 if (interfaceClass.equals(implementedClass)) {
                     componentsImplementingInterface.add(component);
                 }
-            };
+            }
+            ;
         }
         return componentsImplementingInterface;
+    }
+
+    public List<Class<?>> filterAnnotatedWith(List<Class<?>> componentsImplementing,
+            Class<? extends Annotation> annotation) {
+
+        return componentsImplementing.stream()
+                .filter(component -> component.isAnnotationPresent(annotation))
+                .collect(Collectors.toList());
+    }
+
+    public List<String> getNames(List<Class<?>> componentsImplementing) {
+        return componentsImplementing.stream()
+                .map(component -> component.getName())
+                .collect(Collectors.toList());
     }
 }

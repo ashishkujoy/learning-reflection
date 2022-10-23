@@ -41,7 +41,7 @@ public class ApplicationContext implements BeanReadCache {
         }
 
         boolean isNonInitializable = this.reflectionUtil.isInterfaceOrAbstractClass(beanClass);
-        
+
         if (isNonInitializable) {
             return createConcreteImplementationOf(beanClass);
         }
@@ -51,12 +51,28 @@ public class ApplicationContext implements BeanReadCache {
 
     @SuppressWarnings("unchecked")
     private <T> Optional<T> createConcreteImplementationOf(Class<T> beanClass) {
-        List<Class<?>> componentsImplementing = this.reflectionUtil.getComponentsImplementing(this.components, beanClass);
+        List<Class<?>> componentsImplementing = this.reflectionUtil.getComponentsImplementing(this.components,
+                beanClass);
 
-        for (Class<?> component : componentsImplementing) {
-            return createBean(component).map(bean -> (T) bean);
+        if (componentsImplementing.size() == 0) {
+            throw ErrorFactory.noImplementationOfInterface(beanClass.getName());
         }
-        return Optional.empty();
+        if (componentsImplementing.size() == 1) {
+            return createBean(componentsImplementing.get(0)).map(bean -> (T) bean);
+        }
+        List<Class<?>> primaryBeans = this.reflectionUtil.filterAnnotatedWith(componentsImplementing, Primary.class);
+
+        if (primaryBeans.size() == 1) {
+            return createBean(componentsImplementing.get(0)).map(bean -> (T) bean);
+        }
+
+        if (primaryBeans.size() == 0) {
+            throw ErrorFactory.noPrimaryBeansFound(
+                    beanClass.getName(),
+                    this.reflectionUtil.getNames(componentsImplementing));
+        } else {
+            throw ErrorFactory.moreThanOnePrimaryBeansFound(beanClass.getName(), primaryBeans.size());
+        }
     }
 
     private <T> Optional<T> createBean(Class<T> beanClass) {
