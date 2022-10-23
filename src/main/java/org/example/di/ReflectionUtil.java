@@ -2,6 +2,7 @@ package org.example.di;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 
 public class ReflectionUtil {
@@ -63,5 +64,9 @@ public class ReflectionUtil {
                 }
             }
         }
+    }
+
+    public boolean isInterfaceOrAbstractClass(Class<?> beanClass) {        
+        return beanClass.isInterface() || Modifier.isAbstract(beanClass.getModifiers());
     }
 }

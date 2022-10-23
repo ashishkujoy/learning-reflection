@@ -6,17 +6,12 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.burningwave.core.assembler.ComponentContainer;
-import org.burningwave.core.classes.ClassCriteria;
-import org.burningwave.core.classes.ClassHunter;
-import org.burningwave.core.classes.ClassHunter.SearchResult;
-import org.burningwave.core.classes.SearchConfig;
-
 public class ApplicationContext implements BeanReadCache {
     private static Logger logger;
     private static ApplicationContext applicationContext;
     private final ReflectionUtil reflectionUtil;
     private final HashMap<Class<?>, Object> beanCache;
+    private Collection<Class<?>> components;
 
     private ApplicationContext() {
         this.beanCache = new HashMap<>();
@@ -44,11 +39,36 @@ public class ApplicationContext implements BeanReadCache {
             return Optional.of((T) beanCache.get(beanClass));
         }
 
+        boolean isNonInitializable = this.reflectionUtil.isInterfaceOrAbstractClass(beanClass);
+        
+        if (isNonInitializable) {
+            return createConcreteImplementationOf(beanClass);
+        }
+
+        return createBean(beanClass);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> Optional<T> createConcreteImplementationOf(Class<T> beanClass) {
+        for (Class<?> component : this.components) {
+            for (Class<?> implementedClass : component.getInterfaces()) {
+                if (beanClass.equals(implementedClass)) {
+                    return createBean(component).map(bean -> (T) bean);
+                }
+            };
+        }
+        return Optional.empty();
+    }
+
+    private <T> Optional<T> createBean(Class<T> beanClass) {
         try {
             T newInstance = this.reflectionUtil.createInstanceOf(beanClass);
             this.reflectionUtil.invokePostConstruct(newInstance);
+            Class<?>[] classesImplementedByBean = beanClass.getClasses();
+            for (Class<?> superClass : classesImplementedByBean) {
+                beanCache.put(superClass, newInstance);
+            }
             beanCache.put(beanClass, newInstance);
-
             return Optional.of(newInstance);
         } catch (Throwable e) {
             e.printStackTrace();
@@ -58,9 +78,9 @@ public class ApplicationContext implements BeanReadCache {
 
     public void initializeBeans(Class<?> appClass) {
         String path = appClass.getPackageName().replace(".", "/");
-        Collection<Class<?>> beanClasses = ClasspathScanner.getAllClassesAnnotatedWith(path, Component.class);
+        this.components = ClasspathScanner.getAllClassesAnnotatedWith(path, Component.class);
 
-        for (Class<?> beanClass : beanClasses) {
+        for (Class<?> beanClass : this.components) {
             getBean(beanClass);
         }
     }

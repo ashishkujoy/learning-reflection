@@ -5,25 +5,25 @@ import org.example.di.Component;
 
 @Component
 public class TicketBookingService {
-    private final PaymentSerivce paymentSerivce;
+    private final PaymentService paymentService;
     private final NotificationService notificationService;
 
 
-    public TicketBookingService(PaymentSerivce paymentSerivce) {
-        this.paymentSerivce = paymentSerivce;
+    public TicketBookingService(PaymentService paymentService) {
+        this.paymentService = paymentService;
         this.notificationService = null;
     }
 
     @Autowired
     public TicketBookingService(
-            PaymentSerivce paymentSerivce,
+            PaymentService paymentService,
             NotificationService notificationService) {
-        this.paymentSerivce = paymentSerivce;
+        this.paymentService = paymentService;
         this.notificationService = notificationService;
     }
 
     public void bookTicket() {
-        this.paymentSerivce.completePayment();
+        this.paymentService.completePayment();
         this.notificationService.sendBookingNotification();
     }
 
