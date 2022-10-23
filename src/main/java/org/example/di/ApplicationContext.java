@@ -2,6 +2,7 @@ package org.example.di;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -50,12 +51,10 @@ public class ApplicationContext implements BeanReadCache {
 
     @SuppressWarnings("unchecked")
     private <T> Optional<T> createConcreteImplementationOf(Class<T> beanClass) {
-        for (Class<?> component : this.components) {
-            for (Class<?> implementedClass : component.getInterfaces()) {
-                if (beanClass.equals(implementedClass)) {
-                    return createBean(component).map(bean -> (T) bean);
-                }
-            };
+        List<Class<?>> componentsImplementing = this.reflectionUtil.getComponentsImplementing(this.components, beanClass);
+
+        for (Class<?> component : componentsImplementing) {
+            return createBean(component).map(bean -> (T) bean);
         }
         return Optional.empty();
     }

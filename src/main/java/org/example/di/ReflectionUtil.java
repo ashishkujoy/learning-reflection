@@ -4,6 +4,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 public class ReflectionUtil {
     private final BeanReadCache beanCache;
@@ -68,5 +70,17 @@ public class ReflectionUtil {
 
     public boolean isInterfaceOrAbstractClass(Class<?> beanClass) {        
         return beanClass.isInterface() || Modifier.isAbstract(beanClass.getModifiers());
+    }
+
+    public List<Class<?>> getComponentsImplementing(Collection<Class<?>> components, Class<?> interfaceClass) {
+        ArrayList<Class<?>> componentsImplementingInterface = new ArrayList<>();
+        for (Class<?> component : components) {
+            for (Class<?> implementedClass : component.getInterfaces()) {
+                if (interfaceClass.equals(implementedClass)) {
+                    componentsImplementingInterface.add(component);
+                }
+            };
+        }
+        return componentsImplementingInterface;
     }
 }
