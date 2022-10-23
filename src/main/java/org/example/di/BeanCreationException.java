@@ -5,4 +5,8 @@ public class BeanCreationException extends RuntimeException {
     public BeanCreationException(String beanClassName, Throwable throwable) {
         super("Error created bean: " + beanClassName, throwable);
     }
+
+    public BeanCreationException(String message) {
+        super(message);
+    }
 }

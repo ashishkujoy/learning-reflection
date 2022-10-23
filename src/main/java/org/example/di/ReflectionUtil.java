@@ -1,5 +1,6 @@
 package org.example.di;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -7,6 +8,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.example.ticket.Primary;
 
 public class ReflectionUtil {
     private final BeanReadCache beanCache;
@@ -78,8 +81,19 @@ public class ReflectionUtil {
 
     public List<Class<?>> filterClassImplementing(Collection<Class<?>> componentsClasses, Class<?> beanClass) {
         return componentsClasses.stream()
-            .filter(component -> Stream.of(component.getInterfaces())
-                .anyMatch(interfaceClass -> interfaceClass.equals(beanClass))
-            ).collect(Collectors.toList());
+                .filter(component -> Stream.of(component.getInterfaces())
+                        .anyMatch(interfaceClass -> interfaceClass.equals(beanClass)))
+                .collect(Collectors.toList());
+    }
+
+    public List<String> getNames(List<Class<?>> components) {
+        return components.stream().map(c -> c.getName()).collect(Collectors.toList());
+    }
+
+    public List<Class<?>> filterClassAnnotatedWith(List<Class<?>> components,
+            Class<? extends Annotation> annotationClass) {
+        return components.stream()
+                .filter(component -> component.isAnnotationPresent(annotationClass))
+                .collect(Collectors.toList());
     }
 }

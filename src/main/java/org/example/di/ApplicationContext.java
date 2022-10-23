@@ -5,11 +5,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
-import org.burningwave.core.assembler.ComponentContainer;
-import org.burningwave.core.classes.ClassCriteria;
-import org.burningwave.core.classes.ClassHunter;
-import org.burningwave.core.classes.ClassHunter.SearchResult;
-import org.burningwave.core.classes.SearchConfig;
+import org.example.ticket.Primary;
 
 public class ApplicationContext implements BeanReadCache {
     private static ApplicationContext applicationContext;
@@ -45,20 +41,19 @@ public class ApplicationContext implements BeanReadCache {
 
         boolean requiredTypeIsInterface = this.reflectionUtil.isInterface(beanClass);
 
-        if(requiredTypeIsInterface) {
+        if (requiredTypeIsInterface) {
             return createConcreteImplementationOf(beanClass);
         }
 
         return createBean(beanClass);
-        
+
     }
 
-    
     private void createComponents(Class<?> mainClass) {
         String appPackage = mainClass.getPackageName().replace(".", "/");
         Collection<Class<?>> componentClasses = ClasspathScanner.getClassesAnnotatedWith(appPackage, Component.class);
         this.componentsClasses = componentClasses;
-        for(Class<?> componentClass : componentClasses) {
+        for (Class<?> componentClass : componentClasses) {
             getBean(componentClass);
         }
     }
@@ -78,7 +73,33 @@ public class ApplicationContext implements BeanReadCache {
     @SuppressWarnings("unchecked")
     private <T> T createConcreteImplementationOf(Class<T> beanClass) {
         List<Class<?>> components = this.reflectionUtil.filterClassImplementing(this.componentsClasses, beanClass);
+        if (components.size() == 0) {
+            String beanTypeName = this.reflectionUtil.getName(beanClass);
+            throw new BeanCreationException(
+                    String.format("Error creating bean for type: %s, found no component implementing %s", beanTypeName,
+                            beanTypeName));
+        }
+        if (components.size() > 1) {
+            List<Class<?>> primaryComponents = this.reflectionUtil.filterClassAnnotatedWith(components, Primary.class);
+            if (primaryComponents.isEmpty()) {
+                String beanTypeName = this.reflectionUtil.getName(beanClass);
+                List<String> componentNames = this.reflectionUtil.getNames(components);
+                throw ErrorFactory.noPrimaryBeanException(beanTypeName, componentNames);
+            }
+            return this.createInstancePrimaryComponent(primaryComponents, beanClass);
+
+        }
         return getBean((Class<T>) components.get(0));
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T createInstancePrimaryComponent(List<Class<?>> primaryComponents, Class<T> beanClass) {
+        if (primaryComponents.size() > 1) {
+            String beanTypeName = this.reflectionUtil.getName(beanClass);
+            List<String> primaryComponentsName = this.reflectionUtil.getNames(primaryComponents);
+            throw ErrorFactory.multiplePrimaryComponents(beanTypeName, primaryComponentsName);
+        }
+        return getBean((Class<T>)primaryComponents.get(0));
     }
 
 }
