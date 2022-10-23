@@ -1,7 +1,9 @@
 package org.example.ticket;
 
 import org.example.di.Autowired;
+import org.example.di.Component;
 
+@Component
 public class TicketBookingService {
     private final PaymentSerivce paymentSerivce;
     private final NotificationService notificationService;

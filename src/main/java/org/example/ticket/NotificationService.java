@@ -1,7 +1,9 @@
 package org.example.ticket;
 
+import org.example.di.Component;
 import org.example.di.PostConstruct;
 
+@Component
 public class NotificationService {
 
     public NotificationService() {

@@ -9,7 +9,9 @@ import org.example.ticket.TicketBookingService;
 
 public class Main {
     public static void main(String[] args) {
-        ApplicationContext applicationContext = ApplicationContext.init();
+        ApplicationContext applicationContext = ApplicationContext.init(Main.class);
+
+
         NotificationService notificationService = applicationContext.getBean(NotificationService.class);
         PaymentSerivce paymentService = applicationContext.getBean(PaymentSerivce.class);
 

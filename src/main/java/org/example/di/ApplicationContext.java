@@ -1,6 +1,13 @@
 package org.example.di;
 
+import java.util.Collection;
 import java.util.HashMap;
+
+import org.burningwave.core.assembler.ComponentContainer;
+import org.burningwave.core.classes.ClassCriteria;
+import org.burningwave.core.classes.ClassHunter;
+import org.burningwave.core.classes.ClassHunter.SearchResult;
+import org.burningwave.core.classes.SearchConfig;
 
 public class ApplicationContext implements BeanReadCache {
     private static ApplicationContext applicationContext;
@@ -12,9 +19,15 @@ public class ApplicationContext implements BeanReadCache {
         this.reflectionUtil = new ReflectionUtil(this);
     }
 
-    public static ApplicationContext init() {
-        if(ApplicationContext.applicationContext == null) {
-            ApplicationContext.applicationContext = new ApplicationContext();
+    public static ApplicationContext init(Class<?> mainClass) {
+        if (ApplicationContext.applicationContext == null) {
+            System.out.println("Starting application...");
+            long startTime = System.currentTimeMillis();
+            ApplicationContext applicationContext = new ApplicationContext();
+            ApplicationContext.applicationContext = applicationContext;
+            applicationContext.createComponents(mainClass);
+            long endTime = System.currentTimeMillis();
+            System.out.println("Application started in " + (endTime - startTime) + " milliseconds");
         }
         return ApplicationContext.applicationContext;
     }
@@ -22,7 +35,7 @@ public class ApplicationContext implements BeanReadCache {
     @SuppressWarnings("unchecked")
     @Override
     public <T> T getBean(Class<T> beanClass) {
-        if(beanCache.containsKey(beanClass)) {
+        if (beanCache.containsKey(beanClass)) {
             return (T) beanCache.get(beanClass);
         }
 
@@ -33,7 +46,16 @@ public class ApplicationContext implements BeanReadCache {
 
             return newInstance;
         } catch (Throwable e) {
-            throw new BeanCreationException(this.reflectionUtil.getName(beanClass),  e);
+            throw new BeanCreationException(this.reflectionUtil.getName(beanClass), e);
+        }
+    }
+
+    private void createComponents(Class<?> mainClass) {
+        String appPackage = mainClass.getPackageName().replace(".", "/");
+        Collection<Class<?>> componentClasses = ClasspathScanner.getClassesAnnotatedWith(appPackage, Component.class);
+        
+        for(Class<?> componentClass : componentClasses) {
+            getBean(componentClass);
         }
     }
 
