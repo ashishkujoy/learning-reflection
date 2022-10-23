@@ -21,7 +21,7 @@ public class ApplicationContext implements BeanReadCache {
     private ApplicationContext() {
         this.beanCache = new HashMap<>();
         this.reflectionUtil = new ReflectionUtil(this);
-        
+
     }
 
     public static ApplicationContext init(Class<?> appClass) {
@@ -57,22 +57,11 @@ public class ApplicationContext implements BeanReadCache {
     }
 
     public void initializeBeans(Class<?> appClass) {
-        ComponentContainer container = ComponentContainer.getInstance();
-        ClassHunter classHunter = container.getClassHunter();
-        ClassCriteria classesAnnotatedWithComponent = ClassCriteria.create()
-                .allThoseThatMatch(clazz -> clazz.getAnnotation(Component.class) != null);
         String path = appClass.getPackageName().replace(".", "/");
-        System.out.println(path);
-        SearchConfig searchConfig = SearchConfig
-                .forResources(path)
-                .by(classesAnnotatedWithComponent);
+        Collection<Class<?>> beanClasses = ClasspathScanner.getAllClassesAnnotatedWith(path, Component.class);
 
-        try (SearchResult searchResult = classHunter.findBy(searchConfig)) {
-            Collection<Class<?>> beanClasses = searchResult.getClasses();
-            
-            for (Class<?> beanClass : beanClasses) {
-                getBean(beanClass);
-            }
+        for (Class<?> beanClass : beanClasses) {
+            getBean(beanClass);
         }
     }
 }
